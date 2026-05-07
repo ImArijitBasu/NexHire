@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { companiesAPI } from '@/lib/api';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -62,7 +63,7 @@ export default function CompanyDetailPage() {
         {company.coverImage ? (
           <img src={company.coverImage} alt="Cover" className="w-full h-full object-cover" />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/5" />
+          <div className="absolute inset-0 bg-linear-to-r from-primary/20 to-primary/5" />
         )}
       </div>
 
@@ -73,7 +74,7 @@ export default function CompanyDetailPage() {
         </Link>
         
         <div className="bg-background rounded-xl p-6 md:p-8 border shadow-sm flex flex-col md:flex-row gap-6 md:items-end">
-          <div className="h-24 w-24 md:h-32 md:w-32 rounded-xl bg-muted border-4 border-background flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
+          <div className="h-24 w-24 md:h-32 md:w-32 rounded-xl bg-muted border-4 border-background flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
             {company.logo ? (
               <img src={company.logo} alt={company.name} className="h-full w-full object-cover" />
             ) : (
@@ -119,9 +120,14 @@ export default function CompanyDetailPage() {
           <div className="flex flex-col gap-2 min-w-[140px]">
             <Button className="w-full">Follow Company</Button>
             {company.website && (
-              <Button variant="outline" className="w-full" asChild>
-                <a href={company.website} target="_blank" rel="noopener noreferrer">Visit Website</a>
-              </Button>
+              <a
+                href={company.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}
+              >
+                Visit Website
+              </a>
             )}
           </div>
         </div>

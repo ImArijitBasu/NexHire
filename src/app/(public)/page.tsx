@@ -9,7 +9,7 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="w-full py-20 md:py-32 lg:py-40 xl:py-48 bg-gradient-to-b from-background to-muted/50">
+      <section className="w-full py-20 md:py-32 lg:py-40 xl:py-48 bg-linear-to-b from-background to-muted/50">
         <div className="container px-4 md:px-6">
           <div className="flex flex-col items-center space-y-8 text-center">
             <div className="space-y-4 max-w-3xl">

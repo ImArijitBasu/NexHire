@@ -25,18 +25,19 @@ const jobSchema = z.object({
   experienceLevel: z.string(),
   salaryMin: z.coerce.number().optional(),
   salaryMax: z.coerce.number().optional(),
-  isRemote: z.boolean().default(false),
+  isRemote: z.boolean(),
   requirements: z.string().optional(),
   companyId: z.string().min(1, 'Company ID is required'), // This should be auto-filled from the backend typically
 });
 
 type JobFormValues = z.infer<typeof jobSchema>;
+type JobInputValues = z.input<typeof jobSchema>;
 
 export default function CreateJobPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<JobFormValues>({
+  const form = useForm<JobInputValues, any, JobFormValues>({
     resolver: zodResolver(jobSchema),
     defaultValues: {
       title: '',
@@ -95,7 +96,7 @@ export default function CreateJobPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="type">Job Type</Label>
-                <Select onValueChange={(val) => form.setValue('type', val)} defaultValue={form.getValues('type')}>
+                <Select onValueChange={(val) => form.setValue('type', val ?? 'FULL_TIME')} defaultValue={form.getValues('type')}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
@@ -110,7 +111,7 @@ export default function CreateJobPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="experienceLevel">Experience Level</Label>
-                <Select onValueChange={(val) => form.setValue('experienceLevel', val)} defaultValue={form.getValues('experienceLevel')}>
+                <Select onValueChange={(val) => form.setValue('experienceLevel', val ?? 'MID')} defaultValue={form.getValues('experienceLevel')}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select level" />
                   </SelectTrigger>
