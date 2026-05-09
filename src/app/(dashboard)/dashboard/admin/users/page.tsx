@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from '@/components/ui/pagination';
 import { Search, Users, Shield, Trash2, MoreHorizontal } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -18,12 +19,13 @@ export default function AdminUsersPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
+  const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin-users', search, roleFilter],
+    queryKey: ['admin-users', search, roleFilter, page],
     queryFn: async () => {
       try {
-        const params: any = {};
+        const params: any = { page, limit: 10 };
         if (search) params.search = search;
         if (roleFilter !== 'ALL') params.role = roleFilter;
         const res = await adminAPI.getUsers(params);
@@ -34,7 +36,8 @@ export default function AdminUsersPage() {
     },
   });
 
-  const users = data?.data || [];
+  const users = data?.users || data?.data || [];
+  const pagination = data?.pagination;
 
   const updateRoleMutation = useMutation({
     mutationFn: async ({ id, role }: { id: string; role: string }) => {
@@ -93,10 +96,10 @@ export default function AdminUsersPage() {
             placeholder="Search by name or email..."
             className="pl-8"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
         </div>
-        <Select onValueChange={(val) => setRoleFilter(val ?? 'ALL')} defaultValue="ALL">
+        <Select onValueChange={(val) => { setRoleFilter(val ?? 'ALL'); setPage(1); }} defaultValue="ALL">
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by role" />
           </SelectTrigger>
@@ -111,7 +114,7 @@ export default function AdminUsersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Users ({users.length})</CardTitle>
+          <CardTitle>All Users {pagination?.total ? `(${pagination.total})` : ''}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -126,68 +129,92 @@ export default function AdminUsersPage() {
               No users found matching your criteria.
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user: any) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-medium">
-                            {user.name?.charAt(0)?.toUpperCase() || '?'}
-                          </div>
-                          <span className="font-medium">{user.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                      <TableCell>{getRoleBadge(user.role)}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {user.createdAt ? format(new Date(user.createdAt), 'MMM d, yyyy') : '—'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Select
-                            onValueChange={(val) => {
-                              if (val) updateRoleMutation.mutate({ id: user.id, role: val });
-                            }}
-                            defaultValue={user.role}
-                          >
-                            <SelectTrigger className="w-[120px] h-8 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="SEEKER">Seeker</SelectItem>
-                              <SelectItem value="EMPLOYER">Employer</SelectItem>
-                              <SelectItem value="ADMIN">Admin</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
-                            onClick={() => {
-                              if (window.confirm(`Delete user "${user.name}"? This cannot be undone.`)) {
-                                deleteUserMutation.mutate(user.id);
-                              }
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+            <div className="space-y-4">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Joined</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((user: any) => (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-medium">
+                              {user.name?.charAt(0)?.toUpperCase() || '?'}
+                            </div>
+                            <span className="font-medium">{user.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                        <TableCell>{getRoleBadge(user.role)}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {user.createdAt ? format(new Date(user.createdAt), 'MMM d, yyyy') : '—'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Select
+                              onValueChange={(val) => {
+                                if (val) updateRoleMutation.mutate({ id: user.id, role: val });
+                              }}
+                              defaultValue={user.role}
+                            >
+                              <SelectTrigger className="w-[120px] h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="SEEKER">Seeker</SelectItem>
+                                <SelectItem value="EMPLOYER">Employer</SelectItem>
+                                <SelectItem value="ADMIN">Admin</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
+                              onClick={() => {
+                                if (window.confirm(`Delete user "${user.name}"? This cannot be undone.`)) {
+                                  deleteUserMutation.mutate(user.id);
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {pagination?.pages > 1 && (
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        className={page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    <PaginationItem>
+                      <span className="text-sm px-4">Page {page} of {pagination.pages}</span>
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => setPage(p => Math.min(pagination.pages, p + 1))}
+                        className={page === pagination.pages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
             </div>
           )}
         </CardContent>

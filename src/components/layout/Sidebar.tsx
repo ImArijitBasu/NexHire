@@ -29,6 +29,8 @@ export function Sidebar() {
     { name: 'Dashboard', href: '/dashboard/admin', icon: LayoutDashboard },
     { name: 'Users', href: '/dashboard/admin/users', icon: Users },
     { name: 'All Jobs', href: '/dashboard/admin/jobs', icon: Briefcase },
+    { name: 'Blog Posts', href: '/dashboard/admin/blogs', icon: FileText },
+    { name: 'Contacts', href: '/dashboard/admin/contacts', icon: Settings },
   ];
 
   let links = seekerLinks;
@@ -36,7 +38,7 @@ export function Sidebar() {
   if (user?.role === 'ADMIN') links = adminLinks;
 
   return (
-    <aside className="w-64 flex-shrink-0 border-r bg-background flex flex-col h-screen sticky top-0">
+    <aside className="w-64 shrink-0 border-r bg-background flex flex-col h-screen sticky top-0">
       <div className="h-16 flex items-center px-6 border-b">
         <Link href="/" className="flex items-center space-x-2">
           <Briefcase className="h-6 w-6 text-primary" />

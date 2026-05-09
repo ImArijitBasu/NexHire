@@ -6,6 +6,7 @@ import { applicationsAPI, jobsAPI } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Bookmark, BrainCircuit, Activity } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 export default function SeekerDashboard() {
   const { user } = useAuthStore();
@@ -123,21 +124,47 @@ export default function SeekerDashboard() {
 
         <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>Suggested Action</CardTitle>
+            <CardTitle>Application Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-lg border bg-card p-4 space-y-3">
-              <div className="flex items-center gap-3 text-primary">
-                <BrainCircuit className="h-5 w-5" />
-                <span className="font-semibold">Enhance your resume</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Use our AI analyzer to get instant feedback on your resume and match better with top employers.
-              </p>
-              <a href="/dashboard/seeker/ai-tools" className="text-sm font-medium text-primary hover:underline">
-                Try it now &rarr;
-              </a>
-            </div>
+            {appsLoading ? (
+              <Skeleton className="h-[200px] w-full" />
+            ) : applicationsCount === 0 ? (
+              <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">Apply to jobs to see your status breakdown</div>
+            ) : (
+              <>
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={(() => {
+                        const statusMap: Record<string, number> = {};
+                        appsData.data.forEach((app: any) => { statusMap[app.status] = (statusMap[app.status] || 0) + 1; });
+                        return Object.entries(statusMap).map(([name, value]) => ({ name: name.charAt(0) + name.slice(1).toLowerCase(), value }));
+                      })()}
+                      cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={4} dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}
+                    >
+                      {['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'].map((color, i) => (
+                        <Cell key={i} fill={color} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--card-foreground))' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="mt-4 rounded-lg border bg-card p-4 space-y-3">
+                  <div className="flex items-center gap-3 text-primary">
+                    <BrainCircuit className="h-5 w-5" />
+                    <span className="font-semibold">Enhance your resume</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Use our AI analyzer to get instant feedback on your resume and match better with top employers.
+                  </p>
+                  <a href="/dashboard/seeker/ai-tools" className="text-sm font-medium text-primary hover:underline">
+                    Try it now &rarr;
+                  </a>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

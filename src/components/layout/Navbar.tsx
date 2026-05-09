@@ -30,7 +30,19 @@ export function Navbar() {
     { name: 'Jobs', href: '/jobs' },
     { name: 'Companies', href: '/companies' },
     { name: 'Blogs', href: '/blogs' },
+    { name: 'About', href: '/about' },
   ];
+
+  const authNavLinks = [
+    { name: 'Jobs', href: '/jobs' },
+    { name: 'Companies', href: '/companies' },
+    { name: 'Blogs', href: '/blogs' },
+    { name: 'Dashboard', href: `/dashboard/${user?.role?.toLowerCase() || 'seeker'}` },
+    ...(user?.role === 'SEEKER' ? [{ name: 'AI Tools', href: '/dashboard/seeker/ai-tools' }] : []),
+    { name: 'About', href: '/about' },
+  ];
+
+  const activeLinks = isAuthenticated ? authNavLinks : navLinks;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
@@ -42,7 +54,7 @@ export function Navbar() {
           </Link>
           
           <nav className="hidden md:flex gap-6">
-            {navLinks.map((link) => (
+            {activeLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
