@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -9,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Building, MapPin, Globe, Users, Briefcase, Mail, Phone, Calendar } from 'lucide-react';
+import { ArrowLeft, Building, MapPin, Globe, Users, Briefcase, Mail, Phone, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function CompanyDetailPage() {
@@ -25,7 +27,22 @@ export default function CompanyDetailPage() {
     enabled: !!slug,
   });
 
-  const company = data?.data;
+  const company = data?.company;
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const coverImages = company?.coverImages?.length > 0 ? company.coverImages : (company?.coverImage ? [company.coverImage] : []);
+
+  useEffect(() => {
+    if (coverImages.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentImageIndex((prev) => (prev + 1) % coverImages.length);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [coverImages.length]);
+
+  const nextImage = () => setCurrentImageIndex((prev) => (prev + 1) % coverImages.length);
+  const prevImage = () => setCurrentImageIndex((prev) => (prev - 1 + coverImages.length) % coverImages.length);
 
   if (isLoading) {
     return (
@@ -59,11 +76,32 @@ export default function CompanyDetailPage() {
   return (
     <div className="bg-muted/20 min-h-screen pb-12">
       {/* Cover Image & Header */}
-      <div className="w-full h-48 md:h-64 bg-primary/10 relative">
-        {company.coverImage ? (
-          <img src={company.coverImage} alt="Cover" className="w-full h-full object-cover" />
+      <div className="w-full h-48 md:h-64 bg-primary/10 relative group overflow-hidden">
+        {coverImages.length > 0 ? (
+          <>
+            <div className="w-full h-full flex transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}>
+              {coverImages.map((img: string, idx: number) => (
+                <img key={idx} src={img} alt={`Cover ${idx+1}`} className="w-full h-full object-cover shrink-0" />
+              ))}
+            </div>
+            {coverImages.length > 1 && (
+              <>
+                <button onClick={prevImage} className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button onClick={nextImage} className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                  {coverImages.map((_: any, idx: number) => (
+                    <button key={idx} onClick={() => setCurrentImageIndex(idx)} className={`w-2.5 h-2.5 rounded-full transition-colors ${idx === currentImageIndex ? 'bg-white' : 'bg-white/50'}`} />
+                  ))}
+                </div>
+              </>
+            )}
+          </>
         ) : (
-          <div className="absolute inset-0 bg-linear-to-r from-primary/20 to-primary/5" />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/5" />
         )}
       </div>
 

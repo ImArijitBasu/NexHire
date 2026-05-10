@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FileText, Eye, Trash2, ExternalLink } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { format } from 'date-fns';
 import Link from 'next/link';
 
@@ -77,9 +78,17 @@ export default function AdminBlogsPage() {
                           <Link href={`/blogs/${blog.slug}`} target="_blank">
                             <Button variant="ghost" size="icon" className="h-8 w-8"><ExternalLink className="h-4 w-4" /></Button>
                           </Link>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => { if (window.confirm('Delete this blog post?')) deleteMutation.mutate(blog.id); }}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <ConfirmDialog
+                            trigger={
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            }
+                            title="Delete this blog post?"
+                            description="This will permanently remove the blog post and all its content. This action cannot be undone."
+                            actionLabel="Delete Post"
+                            onConfirm={() => deleteMutation.mutate(blog.id)}
+                          />
                         </div>
                       </TableCell>
                     </TableRow>

@@ -23,7 +23,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
+    // Only clear auth data if the request actually had a token attached
+    // This prevents unauthenticated public page requests from wiping the session
+    const hadToken = error.config?.headers?.Authorization;
+    if (error.response?.status === 401 && hadToken && typeof window !== 'undefined') {
       localStorage.removeItem('nexhire_token');
       localStorage.removeItem('nexhire_user');
     }
@@ -123,4 +126,6 @@ export const generalAPI = {
   createReview: (data: any) => api.post('/reviews', data),
   getReviews: (companyId: string) => api.get(`/reviews/${companyId}`),
   getPublicStats: () => api.get('/public-stats'),
+  uploadFile: (data: FormData) => api.post('/upload', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  deleteFile: (url: string) => api.delete('/upload', { data: { url } }),
 };

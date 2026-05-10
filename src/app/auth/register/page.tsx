@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { authAPI } from '@/lib/api';
@@ -10,8 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'react-hot-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2 } from 'lucide-react';
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialRole = searchParams.get('role') === 'employer' ? 'EMPLOYER' : 'SEEKER';
@@ -102,7 +103,7 @@ export default function RegisterPage() {
             />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Creating account...' : `Sign up as ${role === 'EMPLOYER' ? 'Employer' : 'Seeker'}`}
+            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account...</> : `Sign up as ${role === 'EMPLOYER' ? 'Employer' : 'Seeker'}`}
           </Button>
         </form>
       </Tabs>
@@ -116,3 +117,16 @@ export default function RegisterPage() {
     </div>
   );
 }
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+

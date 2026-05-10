@@ -40,7 +40,7 @@ export default function JobDetailPage() {
     enabled: !!slug,
   });
 
-  const job = data?.data;
+  const job = data?.job;
 
   const handleApply = async () => {
     if (!isAuthenticated) {

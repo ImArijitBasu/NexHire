@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { jobsAPI } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,15 +30,28 @@ const jobSchema = z.object({
   requirements: z.string().min(1, 'At least one requirement is needed'),
   responsibilities: z.string().min(1, 'At least one responsibility is needed'),
   skills: z.string().min(1, 'At least one skill is needed'),
-  companyId: z.string().min(1, 'Company ID is required'), // This should be auto-filled from the backend typically
+  companyId: z.string().min(1, 'Company ID is required'),
 });
 
 type JobFormValues = z.infer<typeof jobSchema>;
 type JobInputValues = z.input<typeof jobSchema>;
 
-export default function CreateJobPage() {
+export default function EditJobPage() {
   const router = useRouter();
+  const params = useParams();
+  const slug = params.slug as string;
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['job', slug],
+    queryFn: async () => {
+      const res = await jobsAPI.getBySlug(slug);
+      return res.data;
+    },
+    enabled: !!slug,
+  });
+
+  const job = data?.job;
 
   const form = useForm<JobInputValues, any, JobFormValues>({
     resolver: zodResolver(jobSchema),
@@ -51,14 +65,33 @@ export default function CreateJobPage() {
       requirements: '',
       responsibilities: '',
       skills: '',
-      companyId: 'dummy-id', // In a real app, backend infers this from token, or we fetch it
+      companyId: 'dummy-id',
     },
   });
 
+  useEffect(() => {
+    if (job) {
+      form.reset({
+        title: job.title || '',
+        description: job.description || '',
+        location: job.location || '',
+        type: job.type || 'FULL_TIME',
+        experienceLevel: job.experienceLevel || 'MID',
+        isRemote: job.isRemote || false,
+        salaryMin: job.salaryMin || undefined,
+        salaryMax: job.salaryMax || undefined,
+        requirements: Array.isArray(job.requirements) ? job.requirements.join(', ') : '',
+        responsibilities: Array.isArray(job.responsibilities) ? job.responsibilities.join(', ') : '',
+        skills: Array.isArray(job.skills) ? job.skills.join(', ') : '',
+        companyId: job.companyId || 'dummy-id',
+      });
+    }
+  }, [job, form]);
+
   const onSubmit = async (data: JobFormValues) => {
+    if (!job?.id) return;
     setIsSubmitting(true);
     try {
-      // Convert comma-separated strings to arrays
       const payload = {
         ...data,
         requirements: data.requirements ? data.requirements.split(',').map(s => s.trim()).filter(Boolean) : [],
@@ -66,15 +99,23 @@ export default function CreateJobPage() {
         skills: data.skills ? data.skills.split(',').map(s => s.trim()).filter(Boolean) : [],
       };
       
-      await jobsAPI.create(payload);
-      toast.success('Job posted successfully!');
+      await jobsAPI.update(job.id, payload);
+      toast.success('Job updated successfully!');
       router.push('/dashboard/employer/jobs');
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to post job');
+      toast.error(err.response?.data?.message || 'Failed to update job');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>;
+  }
+
+  if (!job) {
+    return <div className="text-center py-12 text-muted-foreground">Job not found</div>;
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -85,8 +126,8 @@ export default function CreateJobPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Post a New Job</h1>
-          <p className="text-muted-foreground text-sm">Fill out the details below to publish a new job opening.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Edit Job</h1>
+          <p className="text-muted-foreground text-sm">Update the details of your job posting.</p>
         </div>
       </div>
 
@@ -208,7 +249,7 @@ export default function CreateJobPage() {
               </Link>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Publish Job
+                Save Changes
               </Button>
             </div>
           </form>

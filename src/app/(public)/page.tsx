@@ -384,7 +384,7 @@ function FAQSection() {
           <h2 className="text-3xl font-bold tracking-tight mb-3">Frequently Asked Questions</h2>
           <p className="text-muted-foreground">Everything you need to know about NexHire.</p>
         </div>
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion className="w-full">
           {faqs.map((faq, i) => (
             <AccordionItem key={i} value={`faq-${i}`}>
               <AccordionTrigger className="text-left">{faq.q}</AccordionTrigger>

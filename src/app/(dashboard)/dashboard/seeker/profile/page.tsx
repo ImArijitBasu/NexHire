@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/store';
+import { authAPI, generalAPI } from '@/lib/api';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -27,8 +28,10 @@ const profileSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
 export default function SeekerProfilePage() {
-  const { user } = useAuthStore();
+  const { user, setAuth } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingResume, setIsUploadingResume] = useState(false);
   const [skills, setSkills] = useState<string[]>(['JavaScript', 'React', 'TypeScript', 'Node.js']);
   const [newSkill, setNewSkill] = useState('');
 
@@ -37,11 +40,11 @@ export default function SeekerProfilePage() {
     defaultValues: {
       name: '',
       email: '',
-      bio: 'Passionate software engineer looking for new opportunities in frontend development.',
-      title: 'Frontend Developer',
-      location: 'San Francisco, CA',
-      github: 'https://github.com/',
-      linkedin: 'https://linkedin.com/in/',
+      bio: '',
+      title: '',
+      location: '',
+      github: '',
+      linkedin: '',
     },
   });
 
@@ -49,18 +52,88 @@ export default function SeekerProfilePage() {
     if (user) {
       form.setValue('name', user.name || '');
       form.setValue('email', user.email || '');
+      form.setValue('bio', user.bio || '');
+      form.setValue('location', user.location || '');
+      if (user.skills && user.skills.length > 0) setSkills(user.skills);
     }
   }, [user, form]);
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'resume') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (type === 'avatar') setIsUploadingAvatar(true);
+    else setIsUploadingResume(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const uploadRes = await generalAPI.uploadFile(formData);
+      
+      if (uploadRes.data.success) {
+        const oldFile = type === 'avatar' ? user?.image : user?.resume;
+        if (oldFile) {
+          try { await generalAPI.deleteFile(oldFile); } catch (e) {}
+        }
+
+        const updateData = type === 'avatar' 
+          ? { image: uploadRes.data.url }
+          : { resume: uploadRes.data.url };
+          
+        const updateRes = await authAPI.updateProfile(updateData);
+        if (updateRes.data.success) {
+          setAuth(updateRes.data.user, localStorage.getItem('nexhire_token') || '');
+          toast.success(`${type === 'avatar' ? 'Profile picture' : 'Resume'} updated!`);
+        }
+      }
+    } catch (error) {
+      toast.error(`Failed to upload ${type}`);
+    } finally {
+      if (type === 'avatar') setIsUploadingAvatar(false);
+      else setIsUploadingResume(false);
+    }
+  };
+
+  const handleRemoveFile = async (type: 'avatar' | 'resume') => {
+    const fileUrl = type === 'avatar' ? user?.image : user?.resume;
+    if (!fileUrl) return;
+
+    if (type === 'avatar') setIsUploadingAvatar(true);
+    else setIsUploadingResume(true);
+
+    try {
+      await generalAPI.deleteFile(fileUrl);
+      const updateData = type === 'avatar' ? { image: '' } : { resume: '' };
+      const updateRes = await authAPI.updateProfile(updateData);
+      if (updateRes.data.success) {
+        setAuth(updateRes.data.user, localStorage.getItem('nexhire_token') || '');
+        toast.success(`${type === 'avatar' ? 'Profile picture' : 'Resume'} removed!`);
+      }
+    } catch (error) {
+      toast.error(`Failed to remove ${type}`);
+    } finally {
+      if (type === 'avatar') setIsUploadingAvatar(false);
+      else setIsUploadingResume(false);
+    }
+  };
+
   const onSubmit = async (data: ProfileFormValues) => {
     setIsSubmitting(true);
-    // In a real application, this would call an API endpoint like /users/me
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Profile updated successfully');
-    } catch (error) {
-      toast.error('Failed to update profile');
+      const payload = {
+        name: data.name,
+        bio: data.bio,
+        location: data.location,
+        skills: skills,
+        // Optional parsing of title/github/linkedin into website/bio fields or adding to API
+      };
+      const res = await authAPI.updateProfile(payload);
+      if (res.data.success) {
+        setAuth(res.data.user, localStorage.getItem('nexhire_token') || '');
+        toast.success('Profile updated successfully');
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to update profile');
     } finally {
       setIsSubmitting(false);
     }
@@ -96,18 +169,29 @@ export default function SeekerProfilePage() {
             </CardHeader>
             <CardContent className="flex flex-col items-center space-y-4">
               <div className="h-32 w-32 rounded-full border-4 border-muted bg-muted flex items-center justify-center overflow-hidden relative group">
-                {user?.image ? (
+                {isUploadingAvatar ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                ) : user?.image ? (
                   <img src={user.image} alt={user.name || 'User'} className="h-full w-full object-cover" />
                 ) : (
                   <User className="h-16 w-16 text-muted-foreground" />
                 )}
-                <div className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center cursor-pointer transition-colors">
+                <label className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center cursor-pointer transition-colors">
                   <Upload className="h-6 w-6 text-white" />
-                </div>
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, 'avatar')} disabled={isUploadingAvatar} />
+                </label>
               </div>
-              <p className="text-xs text-muted-foreground text-center">
-                Click the image to upload a new avatar. Recommended size: 256x256px.
-              </p>
+              <div className="flex flex-col gap-2 mt-2 w-full max-w-[200px]">
+                {user?.image && (
+                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" disabled={isUploadingAvatar} onClick={() => handleRemoveFile('avatar')}>
+                    <X className="h-4 w-4 mr-2" />
+                    Remove Picture
+                  </Button>
+                )}
+                <p className="text-xs text-muted-foreground text-center">
+                  Click the image to upload a new avatar. Recommended size: 256x256px.
+                </p>
+              </div>
             </CardContent>
           </Card>
 
@@ -117,19 +201,31 @@ export default function SeekerProfilePage() {
               <CardDescription>Upload your latest resume to apply for jobs faster.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-4 border rounded-lg bg-muted/30 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <FileText className="h-8 w-8 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">John_Doe_Resume.pdf</p>
-                    <p className="text-xs text-muted-foreground">Updated 2 days ago</p>
+              {user?.resume ? (
+                <div className="p-4 border rounded-lg bg-muted/30 flex items-center justify-between">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <FileText className="h-8 w-8 text-primary shrink-0" />
+                    <div className="truncate">
+                      <a href={user.resume} target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:underline truncate block">
+                        My_Resume.pdf
+                      </a>
+                      <p className="text-xs text-muted-foreground">Uploaded</p>
+                    </div>
                   </div>
+                  <button onClick={() => handleRemoveFile('resume')} disabled={isUploadingResume} className="text-muted-foreground hover:text-destructive transition-colors shrink-0 p-1">
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-              </div>
-              <Button variant="outline" className="w-full">
-                <Upload className="mr-2 h-4 w-4" />
-                Upload New Resume
+              ) : (
+                <div className="p-4 border border-dashed rounded-lg flex flex-col items-center justify-center text-center space-y-2 bg-muted/10">
+                  <FileText className="h-8 w-8 text-muted-foreground opacity-50" />
+                  <p className="text-sm text-muted-foreground">No resume uploaded yet</p>
+                </div>
+              )}
+              <Button variant="outline" className="w-full relative" disabled={isUploadingResume}>
+                {isUploadingResume ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                {isUploadingResume ? 'Uploading...' : (user?.resume ? 'Upload New Resume' : 'Upload Resume')}
+                <input type="file" accept=".pdf,.doc,.docx" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleFileUpload(e, 'resume')} disabled={isUploadingResume} />
               </Button>
             </CardContent>
           </Card>

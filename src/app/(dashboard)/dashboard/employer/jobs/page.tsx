@@ -1,17 +1,20 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { jobsAPI } from '@/lib/api';
+import { toast } from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Eye } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { format } from 'date-fns';
 
 export default function EmployerJobsPage() {
+  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ['my-company-jobs'],
     queryFn: async () => {
@@ -22,7 +25,18 @@ export default function EmployerJobsPage() {
     },
   });
 
-  const jobs = data?.data || [];
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => jobsAPI.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-company-jobs'] });
+      toast.success('Job deleted successfully');
+    },
+    onError: () => toast.error('Failed to delete job'),
+  });
+
+
+
+  const jobs = data?.jobs || [];
 
   return (
     <div className="space-y-6">
@@ -79,15 +93,27 @@ export default function EmployerJobsPage() {
                       <TableCell>{format(new Date(job.createdAt), 'MMM d, yyyy')}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" title="View">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" title="Edit">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="text-destructive" title="Delete">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <Link href={`/jobs/${job.slug}`}>
+                            <Button variant="ghost" size="icon" title="View">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Link href={`/dashboard/employer/jobs/edit/${job.slug}`}>
+                            <Button variant="ghost" size="icon" title="Edit">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <ConfirmDialog
+                            trigger={
+                              <Button variant="ghost" size="icon" className="text-destructive" title="Delete" disabled={deleteMutation.isPending}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            }
+                            title="Delete this job?"
+                            description="This will permanently remove the job posting. This action cannot be undone."
+                            actionLabel="Delete Job"
+                            onConfirm={() => deleteMutation.mutate(job.id)}
+                          />
                         </div>
                       </TableCell>
                     </TableRow>

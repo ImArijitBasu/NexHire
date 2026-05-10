@@ -1,18 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { companiesAPI } from '@/lib/api';
+import { companiesAPI, generalAPI } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Building, Upload } from 'lucide-react';
+import { Loader2, Building, Upload, X } from 'lucide-react';
 
 const companySchema = z.object({
   name: z.string().min(2, 'Company name is required'),
@@ -24,6 +24,8 @@ const companySchema = z.object({
   location: z.string().optional(),
   email: z.string().email('Must be a valid email').optional().or(z.literal('')),
   phone: z.string().optional(),
+  logo: z.string().optional(),
+  coverImages: z.array(z.string()).max(5).optional(),
 });
 
 type CompanyFormValues = z.infer<typeof companySchema>;
@@ -31,6 +33,11 @@ type CompanyFormValues = z.infer<typeof companySchema>;
 export default function CompanyProfilePage() {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   
   const { data, isLoading } = useQuery({
     queryKey: ['my-company'],
@@ -44,7 +51,7 @@ export default function CompanyProfilePage() {
     },
   });
 
-  const company = data?.data;
+  const company = data?.company;
 
   const form = useForm<CompanyFormValues>({
     resolver: zodResolver(companySchema),
@@ -58,6 +65,8 @@ export default function CompanyProfilePage() {
       location: '',
       email: '',
       phone: '',
+      logo: '',
+      coverImages: [],
     },
   });
 
@@ -73,6 +82,8 @@ export default function CompanyProfilePage() {
         location: company.location || '',
         email: company.email || '',
         phone: company.phone || '',
+        logo: company.logo || '',
+        coverImages: company.coverImages || [],
       });
     }
   }, [company, form]);
@@ -99,11 +110,70 @@ export default function CompanyProfilePage() {
     mutation.mutate(data);
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await generalAPI.uploadFile(formData);
+      
+      const oldLogo = form.getValues('logo');
+      if (oldLogo) {
+        try { await generalAPI.deleteFile(oldLogo); } catch (e) {}
+      }
+      
+      form.setValue('logo', res.data.url, { shouldDirty: true });
+      toast.success('Logo uploaded');
+    } catch (err) {
+      toast.error('Failed to upload logo');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const currentCovers = form.getValues('coverImages') || [];
+    if (currentCovers.length >= 5) {
+      toast.error('Maximum 5 cover images allowed');
+      return;
+    }
+    setUploadingCover(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await generalAPI.uploadFile(formData);
+      form.setValue('coverImages', [...currentCovers, res.data.url], { shouldDirty: true });
+      toast.success('Cover image uploaded');
+    } catch (err) {
+      toast.error('Failed to upload cover image');
+    } finally {
+      setUploadingCover(false);
+    }
+  };
+
+  const removeCoverImage = async (url: string, index: number) => {
+    try {
+      await generalAPI.deleteFile(url);
+      const currentCovers = form.getValues('coverImages') || [];
+      const newCovers = currentCovers.filter((_, i) => i !== index);
+      form.setValue('coverImages', newCovers, { shouldDirty: true });
+      toast.success('Image removed');
+    } catch (err) {
+      toast.error('Failed to remove image');
+    }
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin h-8 w-8" /></div>;
   }
 
   const isFormActive = isEditing || !company;
+  const currentLogo = form.watch('logo');
+  const currentCovers = form.watch('coverImages') || [];
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -125,15 +195,16 @@ export default function CompanyProfilePage() {
               <CardDescription>Your company logo</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center space-y-4">
-              <div className="h-32 w-32 rounded-xl border bg-muted flex items-center justify-center overflow-hidden">
-                {company?.logo ? (
-                  <img src={company.logo} alt="Logo" className="h-full w-full object-cover" />
+              <div className="h-32 w-32 rounded-xl border bg-muted flex items-center justify-center overflow-hidden relative">
+                {currentLogo ? (
+                  <img src={currentLogo} alt="Logo" className="h-full w-full object-cover" />
                 ) : (
                   <Building className="h-12 w-12 text-muted-foreground" />
                 )}
               </div>
-              <Button variant="outline" className="w-full" disabled={!isFormActive}>
-                <Upload className="mr-2 h-4 w-4" />
+              <input type="file" ref={logoInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
+              <Button variant="outline" className="w-full" disabled={!isFormActive || uploadingLogo} onClick={() => logoInputRef.current?.click()}>
+                {uploadingLogo ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="mr-2 h-4 w-4" />}
                 Upload Logo
               </Button>
             </CardContent>
@@ -141,21 +212,46 @@ export default function CompanyProfilePage() {
           
           <Card>
             <CardHeader>
-              <CardTitle>Cover Image</CardTitle>
-              <CardDescription>Banner for your profile</CardDescription>
+              <CardTitle>Cover Images</CardTitle>
+              <CardDescription>Up to 5 images for your profile slider</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="h-24 w-full rounded-md border bg-muted mb-4 overflow-hidden">
-                {company?.coverImage ? (
-                  <img src={company.coverImage} alt="Cover" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-r from-primary/20 to-primary/5" />
-                )}
-              </div>
-              <Button variant="outline" className="w-full" disabled={!isFormActive}>
-                <Upload className="mr-2 h-4 w-4" />
+            <CardContent className="space-y-4">
+              {currentCovers.length > 0 ? (
+                <div className="grid grid-cols-2 gap-2">
+                  {currentCovers.map((url, i) => (
+                    <div key={i} className="relative h-20 rounded border bg-muted overflow-hidden group">
+                      <img src={url} alt={`Cover ${i+1}`} className="w-full h-full object-cover" />
+                      {isFormActive && (
+                        <button
+                          type="button"
+                          onClick={() => removeCoverImage(url, i)}
+                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="h-24 w-full rounded-md border bg-muted flex items-center justify-center text-sm text-muted-foreground">
+                  No cover images
+                </div>
+              )}
+              
+              <input type="file" ref={coverInputRef} className="hidden" accept="image/*" onChange={handleCoverUpload} />
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                disabled={!isFormActive || uploadingCover || currentCovers.length >= 5} 
+                onClick={() => coverInputRef.current?.click()}
+              >
+                {uploadingCover ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="mr-2 h-4 w-4" />}
                 Upload Cover
               </Button>
+              {currentCovers.length >= 5 && (
+                <p className="text-xs text-center text-muted-foreground">Maximum of 5 images reached.</p>
+              )}
             </CardContent>
           </Card>
         </div>

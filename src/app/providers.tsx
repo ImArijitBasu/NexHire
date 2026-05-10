@@ -33,18 +33,24 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const initAuth = async () => {
+      // If no token in localStorage, the user is simply not logged in.
+      // Just mark loading as done — do NOT call logout() which would
+      // wipe any in-progress state.
       if (!token) {
         setLoading(false);
         return;
       }
+
       try {
         const res = await authAPI.getMe();
         if (res.data.success && res.data.user) {
           setAuth(res.data.user, token);
         } else {
+          // Token exists but server says invalid
           logout();
         }
       } catch {
+        // Token exists but request failed (401 expired, network error, etc.)
         logout();
       }
     };

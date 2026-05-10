@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
+import { authClient } from '@/lib/auth-client';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,20 +42,38 @@ export default function LoginPage() {
     }
   };
 
-  const fillDemo = (role: 'seeker' | 'admin' | 'employer') => {
+  const fillDemo = async (role: 'seeker' | 'admin' | 'employer') => {
     const creds: Record<string, { email: string; password: string }> = {
       seeker: { email: 'seeker@nexhire.com', password: 'password123' },
       admin: { email: 'admin@nexhire.com', password: 'password123' },
       employer: { email: 'employer@nexhire.com', password: 'password123' },
     };
-    setFormData(creds[role]);
-    toast.success(`Demo ${role} credentials filled!`);
+    const demoData = creds[role];
+    setFormData(demoData);
+    
+    setLoading(true);
+    try {
+      const res = await authAPI.login(demoData);
+      if (res.data.success) {
+        setAuth(res.data.user, res.data.token);
+        toast.success(`Demo ${role} logged in successfully!`);
+        if (res.data.user.role === 'ADMIN') router.push('/dashboard/admin');
+        else if (res.data.user.role === 'EMPLOYER') router.push('/dashboard/employer');
+        else router.push('/dashboard/seeker');
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || `Failed to login as demo ${role}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleLogin = async () => {
     try {
-      // Redirect to backend Google OAuth endpoint
-      window.location.href = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/google`;
+      await authClient.signIn.social({
+        provider: 'google',
+        callbackURL: '/dashboard/seeker', // Default redirect, can be adjusted based on user role if needed later
+      });
     } catch {
       toast.error('Google login is not available right now');
     }

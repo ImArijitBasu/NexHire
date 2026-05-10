@@ -142,7 +142,7 @@ export default function SeekerDashboard() {
                         return Object.entries(statusMap).map(([name, value]) => ({ name: name.charAt(0) + name.slice(1).toLowerCase(), value }));
                       })()}
                       cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={4} dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}
+                      label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`} labelLine={false}
                     >
                       {['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'].map((color, i) => (
                         <Cell key={i} fill={color} />

@@ -23,7 +23,7 @@ export default function JobsPage() {
     },
   });
 
-  const jobs = data?.data || [];
+  const jobs = data?.jobs || [];
 
   return (
     <div className="container px-4 md:px-6 py-8 md:py-12">

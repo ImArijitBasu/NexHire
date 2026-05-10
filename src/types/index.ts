@@ -56,6 +56,7 @@ export interface Company {
   slug: string;
   logo?: string;
   coverImage?: string;
+  coverImages?: string[];
   description?: string;
   industry?: string;
   size?: string;

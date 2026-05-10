@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from '@/components/ui/pagination';
 import { Search, Users, Shield, Trash2, MoreHorizontal } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
 
@@ -174,18 +175,21 @@ export default function AdminUsersPage() {
                                 <SelectItem value="ADMIN">Admin</SelectItem>
                               </SelectContent>
                             </Select>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
-                              onClick={() => {
-                                if (window.confirm(`Delete user "${user.name}"? This cannot be undone.`)) {
-                                  deleteUserMutation.mutate(user.id);
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <ConfirmDialog
+                              trigger={
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              }
+                              title={`Delete user "${user.name}"?`}
+                              description="This will permanently remove the user account and all associated data. This action cannot be undone."
+                              actionLabel="Delete User"
+                              onConfirm={() => deleteUserMutation.mutate(user.id)}
+                            />
                           </div>
                         </TableCell>
                       </TableRow>

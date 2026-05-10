@@ -21,7 +21,7 @@ export default function CompaniesPage() {
     },
   });
 
-  const companies = data?.data || [];
+  const companies = data?.companies || [];
 
   return (
     <div className="container px-4 md:px-6 py-8 md:py-12">
