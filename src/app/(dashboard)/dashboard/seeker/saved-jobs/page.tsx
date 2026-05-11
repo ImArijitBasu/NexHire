@@ -35,7 +35,7 @@ export default function SavedJobsPage() {
     },
   });
 
-  const savedJobs = data?.data || [];
+  const savedJobs = data?.savedJobs || [];
 
   return (
     <div className="space-y-6">
@@ -78,7 +78,7 @@ export default function SavedJobsPage() {
                   <div key={item.id || job.id} className="p-6 hover:bg-muted/30 transition-colors">
                     <div className="flex flex-col md:flex-row gap-4">
                       {/* Company Logo */}
-                      <div className="flex-shrink-0">
+                      <div className="shrink-0">
                         {job.company?.logo ? (
                           <div className="h-14 w-14 rounded-lg border bg-muted flex items-center justify-center overflow-hidden">
                             <img src={job.company.logo} alt={job.company.name} className="h-full w-full object-cover" />

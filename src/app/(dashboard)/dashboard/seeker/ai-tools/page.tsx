@@ -335,7 +335,7 @@ export default function AIToolsPage() {
                 <Input placeholder="Target Company (optional)" value={chatCompany} onChange={(e) => setChatCompany(e.target.value)} className="bg-background shadow-sm" />
               </div>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col p-0 overflow-hidden bg-gradient-to-b from-muted/5 to-muted/20 relative">
+            <CardContent className="flex-1 flex flex-col p-0 overflow-hidden bg-linear-to-b from-muted/5 to-muted/20 relative">
               <ScrollArea className="flex-1 px-4 py-6" style={{ height: 'calc(100% - 80px)' }}>
                 {chatHistory.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground py-20">

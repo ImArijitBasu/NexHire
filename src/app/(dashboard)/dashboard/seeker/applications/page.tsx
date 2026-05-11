@@ -19,7 +19,7 @@ export default function SeekerApplicationsPage() {
     },
   });
 
-  const applications = data?.data || [];
+  const applications = data?.applications || [];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -63,7 +63,7 @@ export default function SeekerApplicationsPage() {
             <div className="divide-y">
               {applications.map((app: any) => (
                 <div key={app.id} className="p-6 hover:bg-muted/30 transition-colors flex flex-col md:flex-row gap-6">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     {app.job.company.logo ? (
                       <div className="h-16 w-16 rounded border bg-muted flex items-center justify-center overflow-hidden">
                         <img src={app.job.company.logo} alt={app.job.company.name} className="h-full w-full object-cover" />

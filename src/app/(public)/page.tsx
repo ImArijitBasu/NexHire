@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -10,12 +10,21 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { jobsAPI, companiesAPI, generalAPI } from '@/lib/api';
+import { useAuthStore } from '@/store';
 import { toast } from 'react-hot-toast';
 import {
   Search, Briefcase, Building2, TrendingUp, Users, MapPin, DollarSign, Clock,
   BrainCircuit, FileText, Sparkles, MessageSquare, ArrowRight, Star, CheckCircle2,
   Zap, Target, Shield, Mail,
 } from 'lucide-react';
+
+/* ─────────────── Hydration-safe auth hook ─────────────── */
+function useAuth() {
+  const { user, isAuthenticated } = useAuthStore();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return { user: mounted ? user : null, isAuthenticated: mounted && isAuthenticated, mounted };
+}
 
 /* ───────────────────────── HERO ───────────────────────── */
 function HeroSection() {
@@ -94,7 +103,7 @@ function FeaturedJobsSection() {
     queryKey: ['featured-jobs-home'],
     queryFn: async () => { const res = await jobsAPI.getFeatured(); return res.data; },
   });
-  const jobs = (data?.data || []).slice(0, 4);
+  const jobs = (data?.jobs || []).slice(0, 4);
 
   return (
     <section className="w-full py-16 md:py-24 bg-muted/20">
@@ -187,12 +196,31 @@ function HowItWorksSection() {
 
 /* ──────────────────── AI FEATURES ──────────────────── */
 function AIFeaturesSection() {
+  const { user, isAuthenticated } = useAuth();
+
   const features = [
     { icon: BrainCircuit, title: 'Resume Analyzer', desc: 'Get AI-powered feedback, ATS scoring, and improvement suggestions for your resume.' },
     { icon: Sparkles, title: 'Cover Letter Generator', desc: 'Generate tailored cover letters for any job posting in seconds.' },
     { icon: Target, title: 'Smart Job Matching', desc: 'AI matches your skills and experience to the best-fit job opportunities.' },
     { icon: MessageSquare, title: 'Interview Coach', desc: 'Practice with our AI chatbot for mock interviews and behavioral questions.' },
   ];
+
+  // Role-aware CTA
+  let ctaHref = '/auth/register';
+  let ctaLabel = 'Try AI Tools Free';
+  if (isAuthenticated && user) {
+    if (user.role === 'SEEKER') {
+      ctaHref = '/dashboard/seeker/ai-tools';
+      ctaLabel = 'Open AI Tools';
+    } else if (user.role === 'EMPLOYER') {
+      ctaHref = '/dashboard/employer';
+      ctaLabel = 'Go to Dashboard';
+    } else if (user.role === 'ADMIN') {
+      ctaHref = '/dashboard/admin';
+      ctaLabel = 'Go to Dashboard';
+    }
+  }
+
   return (
     <section className="w-full py-16 md:py-24 bg-muted/30 border-y">
       <div className="container px-4 md:px-6">
@@ -215,7 +243,7 @@ function AIFeaturesSection() {
           ))}
         </div>
         <div className="text-center mt-10">
-          <Link href="/auth/register"><Button variant="outline" size="lg">Try AI Tools Free <ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
+          <Link href={ctaHref}><Button variant="outline" size="lg">{ctaLabel} <ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
         </div>
       </div>
     </section>
@@ -302,6 +330,33 @@ function TestimonialsSection() {
 
 /* ──────────────────── CTA FOR EMPLOYERS ──────────────────── */
 function EmployerCTASection() {
+  const { user, isAuthenticated } = useAuth();
+
+  // Role-aware CTAs
+  let primaryHref = '/auth/register?role=employer';
+  let primaryLabel = 'Post a Job';
+  let secondaryHref = '/about';
+  let secondaryLabel = 'Learn More';
+
+  if (isAuthenticated && user) {
+    if (user.role === 'EMPLOYER') {
+      primaryHref = '/dashboard/employer/jobs';
+      primaryLabel = 'Post a Job';
+      secondaryHref = '/dashboard/employer';
+      secondaryLabel = 'Go to Dashboard';
+    } else if (user.role === 'SEEKER') {
+      primaryHref = '/dashboard/seeker';
+      primaryLabel = 'Go to Dashboard';
+      secondaryHref = '/jobs';
+      secondaryLabel = 'Browse Jobs';
+    } else if (user.role === 'ADMIN') {
+      primaryHref = '/dashboard/admin';
+      primaryLabel = 'Admin Dashboard';
+      secondaryHref = '/dashboard/admin/jobs';
+      secondaryLabel = 'Manage Jobs';
+    }
+  }
+
   return (
     <section className="w-full py-20 md:py-32 bg-background border-y">
       <div className="container px-4 md:px-6">
@@ -318,8 +373,8 @@ function EmployerCTASection() {
               ))}
             </ul>
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
-              <Link href="/auth/register?role=employer"><Button size="lg">Post a Job</Button></Link>
-              <Link href="/about"><Button variant="outline" size="lg">Learn More</Button></Link>
+              <Link href={primaryHref}><Button size="lg">{primaryLabel}</Button></Link>
+              <Link href={secondaryHref}><Button variant="outline" size="lg">{secondaryLabel}</Button></Link>
             </div>
           </div>
           <div className="mx-auto w-full max-w-[500px] aspect-video rounded-xl bg-muted border overflow-hidden shadow-xl flex items-center justify-center bg-linear-to-br from-primary/5 to-primary/20">
@@ -379,7 +434,7 @@ function FAQSection() {
   ];
   return (
     <section className="w-full py-16 md:py-24 bg-background">
-      <div className="container px-4 md:px-6 max-w-3xl">
+      <div className="container px-4 md:px-6 max-w-3xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold tracking-tight mb-3">Frequently Asked Questions</h2>
           <p className="text-muted-foreground">Everything you need to know about NexHire.</p>

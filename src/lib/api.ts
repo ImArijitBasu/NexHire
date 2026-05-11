@@ -86,6 +86,8 @@ export const categoriesAPI = {
 // Blogs API
 export const blogsAPI = {
   getAll: (params?: any) => api.get('/blogs', { params }),
+  getAdminAll: (params?: any) => api.get('/blogs/admin', { params }),
+  getMy: (params?: any) => api.get('/blogs/my', { params }),
   getBySlug: (slug: string) => api.get(`/blogs/${slug}`),
   create: (data: any) => api.post('/blogs', data),
   update: (id: string, data: any) => api.put(`/blogs/${id}`, data),

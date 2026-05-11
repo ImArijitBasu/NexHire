@@ -230,11 +230,11 @@ export default function JobDetailPage() {
             <h3 className="font-bold mb-4">About the Company</h3>
             <div className="flex items-center gap-4 mb-4">
               {job.company.logo ? (
-                <div className="h-16 w-16 rounded border bg-muted flex-shrink-0">
+                <div className="h-16 w-16 rounded border bg-muted shrink-0">
                   <img src={job.company.logo} alt={job.company.name} className="w-full h-full object-cover rounded" />
                 </div>
               ) : (
-                <div className="h-16 w-16 rounded border bg-muted flex items-center justify-center flex-shrink-0">
+                <div className="h-16 w-16 rounded border bg-muted flex items-center justify-center shrink-0">
                   <Building className="h-8 w-8 text-muted-foreground" />
                 </div>
               )}

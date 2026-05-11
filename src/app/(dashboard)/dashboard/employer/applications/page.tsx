@@ -49,7 +49,7 @@ export default function EmployerApplicationsPage() {
     updateStatusMutation.mutate({ id, status });
   };
 
-  const applications = data?.data || [];
+  const applications = data?.applications || [];
   
   const filteredApps = selectedStatus === 'ALL' 
     ? applications 
@@ -107,7 +107,7 @@ export default function EmployerApplicationsPage() {
               {filteredApps.map((app: any) => (
                 <div key={app.id} className="p-6 flex flex-col md:flex-row gap-6 hover:bg-muted/30 transition-colors">
                   <div className="flex items-start gap-4 flex-1">
-                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center border flex-shrink-0">
+                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center border shrink-0">
                       {app.user?.image ? (
                          <img src={app.user.image} alt="User" className="h-full w-full rounded-full object-cover" />
                       ) : (

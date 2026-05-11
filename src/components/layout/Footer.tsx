@@ -46,8 +46,6 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/auth/register?role=employer" className="hover:text-foreground transition-colors">Post a Job</Link></li>
               <li><Link href="/dashboard/employer" className="hover:text-foreground transition-colors">Employer Dashboard</Link></li>
-              <li><Link href="/pricing" className="hover:text-foreground transition-colors">Pricing</Link></li>
-              <li><Link href="/resources" className="hover:text-foreground transition-colors">Hiring Resources</Link></li>
             </ul>
           </div>
           

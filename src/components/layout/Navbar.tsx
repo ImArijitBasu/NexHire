@@ -42,6 +42,7 @@ export function Navbar() {
     { name: 'Companies', href: '/companies' },
     { name: 'Blogs', href: '/blogs' },
     { name: 'About', href: '/about' },
+    { name: 'Contact', href: '/contact' },
   ];
 
   const authNavLinks = [
@@ -51,6 +52,8 @@ export function Navbar() {
     { name: 'Dashboard', href: `/dashboard/${user?.role?.toLowerCase() || 'seeker'}` },
     ...(user?.role === 'SEEKER' ? [{ name: 'AI Tools', href: '/dashboard/seeker/ai-tools' }] : []),
     { name: 'About', href: '/about' },
+    { name: 'Contact', href: '/contact' },
+
   ];
 
   const activeLinks = (isMounted && isAuthenticated) ? authNavLinks : navLinks;

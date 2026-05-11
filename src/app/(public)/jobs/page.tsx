@@ -11,19 +11,43 @@ import { Badge } from '@/components/ui/badge';
 import { Search, MapPin, DollarSign, Clock, Building, Briefcase } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
+const JOB_TYPE_FILTERS = [
+  { label: 'Full-time', value: 'FULL_TIME' },
+  { label: 'Part-time', value: 'PART_TIME' },
+  { label: 'Contract', value: 'CONTRACT' },
+  { label: 'Internship', value: 'INTERNSHIP' },
+  { label: 'Freelance', value: 'FREELANCE' },
+  { label: 'Remote', value: 'REMOTE' },
+];
+
 export default function JobsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [location, setLocation] = useState('');
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+
+  const toggleType = (value: string) => {
+    setSelectedTypes((prev) =>
+      prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value]
+    );
+  };
   
   const { data, isLoading, error } = useQuery({
-    queryKey: ['jobs', searchTerm, location],
+    queryKey: ['jobs', searchTerm, location, selectedTypes],
     queryFn: async () => {
-      const res = await jobsAPI.getAll({ search: searchTerm, location });
+      const params: any = { search: searchTerm, location };
+      if (selectedTypes.length === 1) {
+        params.type = selectedTypes[0];
+      }
+      const res = await jobsAPI.getAll(params);
       return res.data;
     },
   });
 
-  const jobs = data?.jobs || [];
+  // Client-side filter for multiple types (backend only supports single type param)
+  let jobs = data?.jobs || [];
+  if (selectedTypes.length > 1) {
+    jobs = jobs.filter((job: any) => selectedTypes.includes(job.type));
+  }
 
   return (
     <div className="container px-4 md:px-6 py-8 md:py-12">
@@ -65,10 +89,15 @@ export default function JobsPage() {
             <div className="space-y-4">
               <h3 className="font-semibold">Job Type</h3>
               <div className="space-y-2">
-                {['Full-time', 'Part-time', 'Contract', 'Remote'].map((type) => (
-                  <label key={type} className="flex items-center space-x-2 text-sm cursor-pointer">
-                    <input type="checkbox" className="rounded border-gray-300" />
-                    <span>{type}</span>
+                {JOB_TYPE_FILTERS.map((type) => (
+                  <label key={type.value} className="flex items-center space-x-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300"
+                      checked={selectedTypes.includes(type.value)}
+                      onChange={() => toggleType(type.value)}
+                    />
+                    <span>{type.label}</span>
                   </label>
                 ))}
               </div>

@@ -22,7 +22,7 @@ export default function AboutPage() {
   ];
 
   return (
-    <div className="container max-w-5xl px-4 py-12 md:py-20">
+    <div className="container mx-auto max-w-5xl px-4 py-12 md:py-20">
       {/* Hero */}
       <div className="text-center mb-16 space-y-4">
         <Badge variant="secondary" className="mb-2"><Globe className="h-3 w-3 mr-1" /> About NexHire</Badge>

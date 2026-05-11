@@ -101,7 +101,7 @@ export default function CompanyDetailPage() {
             )}
           </>
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/5" />
+          <div className="absolute inset-0 bg-linear-to-r from-primary/20 to-primary/5" />
         )}
       </div>
 

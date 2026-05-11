@@ -19,9 +19,19 @@ export default function AdminBlogsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['admin-blogs'],
     queryFn: async () => {
-      try { const res = await blogsAPI.getAll(); return res.data; }
+      try { const res = await blogsAPI.getAdminAll(); return res.data; }
       catch { return { data: [] }; }
     },
+  });
+
+  const togglePublishMutation = useMutation({
+    mutationFn: ({ id, published }: { id: string; published: boolean }) => 
+      blogsAPI.update(id, { published: !published }),
+    onSuccess: () => { 
+      queryClient.invalidateQueries({ queryKey: ['admin-blogs'] }); 
+      toast.success('Blog status updated'); 
+    },
+    onError: () => toast.error('Failed to update blog status'),
   });
 
   const deleteMutation = useMutation({
@@ -75,6 +85,14 @@ export default function AdminBlogsPage() {
                       <TableCell className="text-muted-foreground">{blog.createdAt ? format(new Date(blog.createdAt), 'MMM d, yyyy') : '—'}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button 
+                            variant={blog.published ? "outline" : "default"} 
+                            size="sm" 
+                            onClick={() => togglePublishMutation.mutate({ id: blog.id, published: blog.published })}
+                            className="mr-2"
+                          >
+                            {blog.published ? 'Unpublish' : 'Approve'}
+                          </Button>
                           <Link href={`/blogs/${blog.slug}`} target="_blank">
                             <Button variant="ghost" size="icon" className="h-8 w-8"><ExternalLink className="h-4 w-4" /></Button>
                           </Link>

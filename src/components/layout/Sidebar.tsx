@@ -23,6 +23,7 @@ export function Sidebar() {
     { name: 'Company Profile', href: '/dashboard/employer/company', icon: Building },
     { name: 'Manage Jobs', href: '/dashboard/employer/jobs', icon: Briefcase },
     { name: 'Applicants', href: '/dashboard/employer/applications', icon: Users },
+    { name: 'Blogs', href: '/dashboard/employer/blogs', icon: FileText },
   ];
 
   const adminLinks = [

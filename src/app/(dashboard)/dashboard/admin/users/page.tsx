@@ -164,7 +164,7 @@ export default function AdminUsersPage() {
                               onValueChange={(val) => {
                                 if (val) updateRoleMutation.mutate({ id: user.id, role: val });
                               }}
-                              defaultValue={user.role}
+                              value={user.role}
                             >
                               <SelectTrigger className="w-[120px] h-8 text-xs">
                                 <SelectValue />
