@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Briefcase, UserCircle, LogOut, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
+import { ThemeToggle } from './ThemeToggle';
 
 export function Navbar() {
   const pathname = usePathname();
@@ -86,11 +87,14 @@ export function Navbar() {
         <div className="flex items-center gap-4">
           {!isMounted ? (
             <div className="flex gap-2">
+              <div className="h-9 w-9 bg-muted rounded-full animate-pulse" />
               <div className="h-9 w-16 bg-muted rounded animate-pulse" />
               <div className="h-9 w-24 bg-muted rounded animate-pulse" />
             </div>
           ) : isAuthenticated && user ? (
-            <div className="relative" ref={dropdownRef}>
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+              <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center gap-2 rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
@@ -127,15 +131,17 @@ export function Navbar() {
                 </div>
               )}
             </div>
+            </div>
           ) : (
-            <>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
               <Link href="/auth/login">
                 <Button variant="ghost" size="sm">Login</Button>
               </Link>
               <Link href="/auth/register">
                 <Button size="sm">Get Started</Button>
               </Link>
-            </>
+            </div>
           )}
         </div>
       </div>
