@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { jobsAPI } from '@/lib/api';
@@ -8,8 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, MapPin, DollarSign, Clock, Building, Briefcase } from 'lucide-react';
+import { Search, MapPin, DollarSign, Clock, Building, Briefcase, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const JOB_TYPE_FILTERS = [
   { label: 'Full-time', value: 'FULL_TIME' },
@@ -17,24 +18,39 @@ const JOB_TYPE_FILTERS = [
   { label: 'Contract', value: 'CONTRACT' },
   { label: 'Internship', value: 'INTERNSHIP' },
   { label: 'Freelance', value: 'FREELANCE' },
-  { label: 'Remote', value: 'REMOTE' },
 ];
 
 export default function JobsPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [location, setLocation] = useState('');
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [sort, setSort] = useState('newest');
+  const [page, setPage] = useState(1);
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const toggleType = (value: string) => {
     setSelectedTypes((prev) =>
       prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value]
     );
+    setPage(1); // Reset to page 1 on filter change
   };
   
   const { data, isLoading, error } = useQuery({
-    queryKey: ['jobs', searchTerm, location, selectedTypes],
+    queryKey: ['jobs', debouncedSearch, location, selectedTypes, sort, page],
     queryFn: async () => {
-      const params: any = { search: searchTerm, location };
+      const params: any = { 
+        search: debouncedSearch, 
+        location, 
+        sort, 
+        page, 
+        limit: 10 
+      };
       if (selectedTypes.length === 1) {
         params.type = selectedTypes[0];
       }
@@ -49,14 +65,33 @@ export default function JobsPage() {
     jobs = jobs.filter((job: any) => selectedTypes.includes(job.type));
   }
 
+  const pagination = data?.pagination || { page: 1, pages: 1 };
+
   return (
     <div className="container px-4 md:px-6 py-8 md:py-12">
       <div className="flex flex-col space-y-6 md:space-y-8">
-        <div className="space-y-4">
-          <h1 className="text-3xl font-bold tracking-tight">Find your next job</h1>
-          <p className="text-muted-foreground text-lg">
-            Browse thousands of job openings from top companies and find the perfect match for you.
-          </p>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight">Find your next job</h1>
+            <p className="text-muted-foreground">
+              Browse {pagination.total || 0} job openings from top companies.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground whitespace-nowrap">Sort by:</span>
+            <Select value={sort} onValueChange={(val) => { if (val) setSort(val); setPage(1); }}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest First</SelectItem>
+                <SelectItem value="oldest">Oldest First</SelectItem>
+                <SelectItem value="salary_high">Highest Salary</SelectItem>
+                <SelectItem value="salary_low">Lowest Salary</SelectItem>
+                <SelectItem value="popular">Most Popular</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Search & Filters */}
@@ -79,7 +114,7 @@ export default function JobsPage() {
               onChange={(e) => setLocation(e.target.value)}
             />
           </div>
-          <Button className="w-full">Find Jobs</Button>
+          <Button className="w-full">Search</Button>
         </div>
 
         {/* Job Listings */}
@@ -87,17 +122,17 @@ export default function JobsPage() {
           {/* Sidebar Filters */}
           <div className="hidden md:block space-y-6">
             <div className="space-y-4">
-              <h3 className="font-semibold">Job Type</h3>
+              <h3 className="font-semibold flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" /> Job Type</h3>
               <div className="space-y-2">
                 {JOB_TYPE_FILTERS.map((type) => (
-                  <label key={type.value} className="flex items-center space-x-2 text-sm cursor-pointer">
+                  <label key={type.value} className="flex items-center space-x-2 text-sm cursor-pointer group">
                     <input
                       type="checkbox"
-                      className="rounded border-gray-300"
+                      className="rounded border-gray-300 text-primary focus:ring-primary"
                       checked={selectedTypes.includes(type.value)}
                       onChange={() => toggleType(type.value)}
                     />
-                    <span>{type.label}</span>
+                    <span className="group-hover:text-primary transition-colors">{type.label}</span>
                   </label>
                 ))}
               </div>
@@ -181,6 +216,41 @@ export default function JobsPage() {
                   </CardFooter>
                 </Card>
               ))
+            )}
+
+            {/* Pagination */}
+            {pagination.pages > 1 && (
+              <div className="flex items-center justify-center gap-2 pt-8">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((p) => (
+                    <Button
+                      key={p}
+                      variant={page === p ? 'default' : 'outline'}
+                      size="sm"
+                      className="w-9 h-9"
+                      onClick={() => setPage(p)}
+                    >
+                      {p}
+                    </Button>
+                  ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))}
+                  disabled={page === pagination.pages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             )}
           </div>
         </div>

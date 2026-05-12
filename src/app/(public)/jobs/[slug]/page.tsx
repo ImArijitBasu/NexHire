@@ -21,6 +21,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 
 export default function JobDetailPage() {
   const { slug } = useParams();
@@ -223,6 +224,38 @@ export default function JobDetailPage() {
               </div>
             )}
           </div>
+
+          {/* Related Jobs */}
+          {data?.relatedJobs && data.relatedJobs.length > 0 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold">Related Jobs</h2>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {data.relatedJobs.map((rj: any) => (
+                  <Card key={rj.id} className="hover:border-primary/50 transition-colors">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <Link href={`/jobs/${rj.slug}`}>
+                            <CardTitle className="text-lg hover:text-primary transition-colors line-clamp-1">
+                              {rj.title}
+                            </CardTitle>
+                          </Link>
+                          <p className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Building className="h-3 w-3" /> {rj.company.name}
+                          </p>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardFooter className="pt-0">
+                      <Link href={`/jobs/${rj.slug}`} className="w-full">
+                        <Button variant="outline" size="sm" className="w-full">View Details</Button>
+                      </Link>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="space-y-6">
