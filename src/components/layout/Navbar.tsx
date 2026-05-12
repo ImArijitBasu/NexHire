@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store';
 import { Button } from '@/components/ui/button';
-import { Briefcase, UserCircle, LogOut, ChevronDown } from 'lucide-react';
+import { Briefcase, UserCircle, LogOut, Menu } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { ThemeToggle } from './ThemeToggle';
@@ -84,7 +85,37 @@ export function Navbar() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="md:hidden flex items-center">
+            <Sheet>
+              <SheetTrigger>
+                <Button variant="ghost" size="icon" className="mr-1">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle Menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[280px]">
+                <SheetTitle className="text-left font-bold mb-4 flex items-center gap-2">
+                  <Briefcase className="h-5 w-5 text-primary" />
+                  NexHire
+                </SheetTitle>
+                <nav className="flex flex-col gap-4 mt-6">
+                  {activeLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`text-base font-medium transition-colors hover:text-primary ${
+                        pathname === link.href ? 'text-primary' : 'text-muted-foreground'
+                      }`}
+                    >
+                      {link.name}
+                    </Link>
+                  ))}
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
+
           {!isMounted ? (
             <div className="flex gap-2">
               <div className="h-9 w-9 bg-muted rounded-full animate-pulse" />
@@ -133,9 +164,9 @@ export function Navbar() {
             </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <ThemeToggle />
-              <Link href="/auth/login">
+              <Link href="/auth/login" className="hidden sm:block">
                 <Button variant="ghost" size="sm">Login</Button>
               </Link>
               <Link href="/auth/register">
